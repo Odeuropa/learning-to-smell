@@ -8,6 +8,10 @@ class TBond:
     __slots__ = ["kind", "node1", "node2"]
     def __init__(self, kind, node1, node2):
         self.kind = kind; self.node1 = node1; self.node2 = node2
+    def OtherNode(self, node):
+        if self.node1 is node: return self.node2
+        if self.node2 is node: return self.node1
+        assert False
 class TNode:
     """
     'atom' = a string containing the chemical symbol of this atom, e.g. "C", "N", "Br", etc.
@@ -175,7 +179,9 @@ def ParseSmiles(s):
     for node in G.nodes: assert node.atom != PROVISIONAL_ATOM
     return G
 
-def Test(fileName):
+def ReadCsv(fileName):
+    """Reads the CSV file 'fileName', skips the header and yields (smilesString, smellsString) pairs for each subsequent line.
+    If there is no smells column (e.g. for test.csv), the second value of each pair will be an empty string."""
     with open(fileName, newline = '') as f:
         firstRow = True
         for row in csv.reader(f):
@@ -184,8 +190,15 @@ def Test(fileName):
             # The first entry in each row is a SMILES string.  The second entry, if present,
             # is a list of smells.
             smilesString = row[0]; smells = "" if len(row) <= 1 else row[1]
-            print(smilesString)
-            G = ParseSmiles(smilesString)
+            yield (smilesString, smells)
+
+def Test(fileName):
+    maxAtoms = 0
+    for (smilesString, smells) in ReadCsv(fileName):
+        print(smilesString)
+        G = ParseSmiles(smilesString)
+        maxAtoms = max(maxAtoms, len(G.nodes))
+    print("MaxAtoms = %d" % maxAtoms) # 89 in train.csv, 55 in test.csv
 
 if __name__ == "__main__":
     # Assume that the .csv files from https://www.aicrowd.com/challenges/learning-to-smell/dataset_files
